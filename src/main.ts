@@ -1,4 +1,5 @@
 import { Application, Assets, Graphics, Sprite } from "pixi.js";
+import { Vec2 } from "./math";
 
 function randomInRange(max = 1, min = 0): number {
     return Math.round(Math.random() * (max - min) + min);
@@ -9,46 +10,24 @@ function randomPick<T>(a: T, b: T, weight = 0.5): T {
     return b;
 }
 
-class Vector2 {
-    public x: number = 0;
-    public y: number = 0;
-    public get magnitude(): number {
-        return Math.abs(Math.sqrt(this.x * this.x + this.y * this.y));
-    }
-    constructor(arr: [number, number]);
+class Graviton {
+    public mass: number = 500000;
+    public gravity: number = 0.001;
+    constructor(position: Vec2);
     constructor();
-    constructor(arr?: [number, number]) {
-        if (arr != undefined) {
-            this.x = arr[0];
-            this.y = arr[1];
-        }
-    }
-    public distanceTo(b: Vector2): number {
-        let a = this;
-        return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
-    }
-    public static mul(a: Vector2, b: Vector2): Vector2 {
-        return new Vector2([a.x * b.x, a.y * b.y]);
-    }
-    public static add(a: Vector2, b: Vector2): Vector2 {
-        return new Vector2([a.x + b.x, a.y + b.y]);
-    }
-    public static sub(a: Vector2, b: Vector2): Vector2 {
-        return new Vector2([a.x - b.x, a.y - b.y]);
-    }
-    public static randomInRadius(origin: Vector2, radius: number): Vector2 {
-        const a = Math.random() * 2 * Math.PI;
-        const r = radius * Math.sqrt(Math.random());
-        const x = r * Math.cos(a);
-        const y = r * Math.sin(a);
-        return Vector2.sub(origin, new Vector2([x, y]));
+    constructor(public position: Vec2 = new Vec2()) {}
+    public getVelocity(a: Actor): Vec2 {
+        const r = a.position.distanceTo(this.position);
+        const accel = this.gravity * ((this.mass * a.mass) / Math.pow(r, 2));
+        return a.position.directionOf(this.position).multiplyScalar(accel);
     }
 }
 
 class Actor {
-    public position: Vector2 = new Vector2();
-    public velocity: Vector2 = new Vector2();
-    public mass: number = 15;
+    public position: Vec2 = new Vec2();
+    public velocity: Vec2 = new Vec2();
+    public mass: number = 2;
+    public gravity: Graviton = new Graviton();
 }
 
 class Pixol extends Actor {
@@ -56,19 +35,18 @@ class Pixol extends Actor {
     public sprite: Sprite = Sprite.from("/assets/particle.png");
     constructor() {
         super();
-        this.sprite.scale.set(0.05);
+        this.sprite.scale.set(0.02);
     }
-    public setPosition(pos: Vector2) {
+    public setPosition(pos: Vec2) {
         this.position = pos;
         this.sprite.position.set(pos.x, pos.y);
     }
     public tick(delta: number) {
-        const force = this.mass * 9.80665;
-        const pvel = new Vector2([
+        let pvel = new Vec2(
             this.velocity.x * delta,
-            this.velocity.y * delta + force,
-        ]);
-        this.setPosition(Vector2.add(this.position, pvel));
+            this.velocity.y * delta
+        ).add(this.gravity.getVelocity(this));
+        this.setPosition(this.position.add(pvel));
     }
 }
 
@@ -84,19 +62,20 @@ class Pixol extends Actor {
 
     const MAX_WIDTH = app.screen.width;
     const MAX_HEIGHT = app.screen.height;
-    const MID_POINT = new Vector2([MAX_WIDTH / 2, MAX_HEIGHT / 2]);
-    const SPAWN_RATE = 200;
+    const MID_POINT = new Vec2(MAX_WIDTH / 2, MAX_HEIGHT / 2);
+    const SPAWN_RATE = 5000;
 
-    const particleTex = await Assets.load("/assets/particle.png");
+    await Assets.load("/assets/particle.png");
 
     const pixols: Pixol[] = [];
+    const graviton = new Graviton(new Vec2(MAX_WIDTH / 2, MAX_HEIGHT / 2));
 
     for (let i = 0; i < SPAWN_RATE; i++) {
         const pixol = new Pixol();
-        pixol.velocity.x = randomPick(1, -1) * randomInRange(1, 0.1);
-        pixol.velocity.y = randomPick(1, -1) * randomInRange(1, 0.1);
+
         pixol.sprite.anchor.set(0.5);
-        pixol.setPosition(Vector2.randomInRadius(MID_POINT, 200));
+        pixol.setPosition(Vec2.randomInRadius(MID_POINT, 300));
+        pixol.gravity = graviton;
         pixols.push(pixol);
         app.stage.addChild(pixol.sprite);
     }
@@ -110,23 +89,19 @@ class Pixol extends Actor {
             pixol.tick(time.deltaTime);
             let changed = false;
             if (pixol.position.x < 0) {
-                let rem = Math.abs(pixol.position.x);
                 pixol.position.x = 0;
-                pixol.velocity.x *= -1;
+                pixol.velocity.x = -pixol.velocity.x;
                 changed = true;
             } else if (pixol.position.x >= MAX_WIDTH) {
-                let rem = Math.sqrt(pixol.position.x - MAX_WIDTH);
                 pixol.position.x = MAX_WIDTH - 1;
-                pixol.velocity.x = -pixol.velocity.x - rem;
+                pixol.velocity.x = -pixol.velocity.x;
                 changed = true;
             } else if (pixol.position.y < 0) {
-                let rem = Math.abs(pixol.position.y);
                 pixol.position.y = 0;
-                pixol.velocity.y = -pixol.velocity.y + rem;
+                pixol.velocity.y = -pixol.velocity.y;
                 changed = true;
             } else if (pixol.position.y >= MAX_HEIGHT) {
-                let rem = pixol.position.y - MAX_HEIGHT;
-                pixol.velocity.y = -pixol.velocity.y - rem;
+                pixol.velocity.y = -pixol.velocity.y;
                 pixol.position.y = MAX_HEIGHT - 1;
                 changed = true;
             }

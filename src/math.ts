@@ -37,4 +37,22 @@ export class Vec2 implements PointData {
     public asPoint(): Point {
         return new Point(this.x, this.y);
     }
+    public normalize(): Vec2 {
+        const len = this.length;
+        return new Vec2(this.x / len, this.y / len);
+    }
+    public directionOf<T extends PointData>(b: T): Vec2 {
+        return new Vec2(b.x - this.x, b.y - this.y).normalize();
+    }
+    public static randomInRadius<T extends PointData>(
+        origin: T,
+        radius: number
+    ): Vec2 {
+        const a = Math.random() * 2 * Math.PI;
+        const r = radius * Math.sqrt(Math.random());
+        const x = r * Math.cos(a);
+        const y = r * Math.sin(a);
+        const org = Vec2.from(origin);
+        return org.sub(new Vec2(x, y));
+    }
 }
