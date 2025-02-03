@@ -55,4 +55,7 @@ export class Vec2 implements PointData {
         const org = Vec2.from(origin);
         return org.sub(new Vec2(x, y));
     }
+    public toString(): string {
+        return `[${this.x}, ${this.y}]`;
+    }
 }
