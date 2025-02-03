@@ -1,7 +1,9 @@
-import { Application, Assets, Graphics, Sprite } from "pixi.js";
+import "pixi.js/unsafe-eval";
+import { Application, Assets, Sprite } from "pixi.js";
 import { Vec2 } from "./math";
 
-function randomInRange(max = 1, min = 0): number {
+/**
+ * function randomInRange(max = 1, min = 0): number {
     return Math.round(Math.random() * (max - min) + min);
 }
 
@@ -9,6 +11,7 @@ function randomPick<T>(a: T, b: T, weight = 0.5): T {
     if (Math.random() <= weight) return a;
     return b;
 }
+ */
 
 class Graviton {
     public mass: number = 500000;
@@ -32,7 +35,7 @@ class Actor {
 
 class Pixol extends Actor {
     public hp: number = 100;
-    public sprite: Sprite = Sprite.from("/assets/particle.png");
+    public sprite: Sprite = Sprite.from("/graviton/assets/particle.png");
     constructor() {
         super();
         this.sprite.scale.set(0.02);
@@ -65,7 +68,7 @@ class Pixol extends Actor {
     const MID_POINT = new Vec2(MAX_WIDTH / 2, MAX_HEIGHT / 2);
     const SPAWN_RATE = 5000;
 
-    await Assets.load("/assets/particle.png");
+    await Assets.load("/graviton/assets/particle.png");
 
     const pixols: Pixol[] = [];
     const graviton = new Graviton(new Vec2(MAX_WIDTH / 2, MAX_HEIGHT / 2));
