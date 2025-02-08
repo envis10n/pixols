@@ -9,6 +9,7 @@
     "dev": "vite"
   },
   "dependencies": {
+    "gpu.js": "^2.16.0",
     "pixi.js": "^8.6.2"
   },
   "devDependencies": {
@@ -16,5 +17,8 @@
     "eslint": "^9.16.0",
     "typescript": "~5.7.2",
     "vite": "^6.0.2"
+  },
+  "overrides": {
+    "gl": "^8.1.6"
   }
 }
